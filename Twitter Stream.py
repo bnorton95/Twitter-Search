@@ -5,10 +5,10 @@ Created on Tue Feb 19 21:35:12 2019
 Author : Brian Norton
 """
 
-
+import xlsxwriter as xl
 import requests
 from requests_oauthlib import OAuth1
-#import json
+import json
 #import networkx as nx
 #import sys
 
@@ -35,16 +35,56 @@ def authenticate(credentials):
     except (KeyError, TypeError):
         print('Error setting auth credentials.')
         raise
+        
+def extractData(line):
+    """ Returned in the following format:
+    [   User ID,
+        Screen Name,
+        User Followers,
+        User Friends,
+        Tweet ID,
+        Tweet/Retweet Status,
+        Text   ] """
+    
+    returnData = []
+    returnData.append(line['user']['id'])
+    returnData.append(line['user']['screen_name'])
+    returnData.append(line['user']['followers_count'])
+    returnData.append(line['user']['friends_count'])
+    returnData.append(line['id'])
+    try:
+        text = line['retweeted_status']['extended_tweet']['full_text']
+        returnData.append("Retweet")
+    except:
+        returnData.append("Tweet")
+        try:
+            text = line['extended_tweet']['full_text']
+        except:
+            text = line['text']
+    returnData.append(text)
+    
+    return returnData
+
+def prepareWorksheet(worksheet):
+    worksheet.write(0,0,"User ID")
+    worksheet.write(0,1,"Screen Name")
+    worksheet.write(0,2,"User Followers")
+    worksheet.write(0,3,"User Friends")
+    worksheet.write(0,4,"Tweet ID")
+    worksheet.write(0,5,"Tweet Status")
+    worksheet.write(0,6,"Text")
+    
+    
 
 closeProgram = False
 
 while not closeProgram:
-    choiceRange = [1,3]
+    choiceRange = [0,21]
     print("1. Save a number of tweets from a local twitter stream")
     print("2. Analyze a saved twitter set")
-    print("3. Exit")
+    print("0. Exit")
     
-    choice = 0
+    choice = -1
     
     choice = int(input("Please enter an option: "))
     while choice < choiceRange[0] or choice > choiceRange[1]:
@@ -52,49 +92,52 @@ while not closeProgram:
     
     #Capture tweets
     if choice == 1:
-        print("Authenticating Twitter credentials")
         
-        
-        tweetSearch = input("Enter the keyword you want to search for: ")
+        tweetSearch = input("Enter the term you want to collect related tweets to: ")
         tweetNum = int(input("Enter the number of tweets to collect: "))
         
-        
         url = 'https://stream.twitter.com/1.1/statuses/filter.json'
-
         client = authenticate(credentials)
         response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': tampa})
-        statuses = []
+        
+        fileName = 'TweetSearch.xlsx'
         
         if response.ok:
-            print(tweetSearch)
-            #f = open(fileName,"wb")
-            num_tweets = 0
+            tweetCounter = 0
+            statuses = []
+            
+            workbook = xl.Workbook(fileName)
+            worksheet = workbook.add_worksheet()
+            prepareWorksheet(worksheet)
+            
             try:
                 for line in response.iter_lines():
-                    if num_tweets == tweetNum:
+                    if tweetCounter == tweetNum:
                         break
                     if line:
-                        #f.write(line + b'\n')
-                        num_tweets += 1
+                        statuses.append(extractData(json.loads(line)))
+                        tweetCounter += 1
                         print(".", end='', flush=True)
+                for i, status in enumerate(statuses):
+                    for j, data in enumerate(status):
+                        worksheet.write(i+2,j,data)
+                        #print("{} {} {} {}".format(status,i,data,j))
             except KeyboardInterrupt:
-                # User pressed the 'Stop' button
-                print()
-                print('Data collection interrupted by user!')
+                {}
             finally:
-                # Cleanup -- close file and report number of tweets collected 
-                #f.close()
                 print()
-                print('Collected {} tweets.'.format(num_tweets))
+                print('Success! Collected {} tweets.'.format(tweetCounter))
+            workbook.close()
         else:
-            print('Connection failed with status: {}'.format(response.status_code))
+            print('Connection failed. Error: {}'.format(response.status_code))
+            
         
     #Analyze saved tweets 
     if choice == 2:
         print("TODO")
     
     #Exit
-    if choice == 3:
+    if choice == 0:
         closeProgram = True
     
     
