@@ -6,11 +6,12 @@ Author : Brian Norton
 """
 
 import xlsxwriter as xl
+import xlrd
 import requests
 from requests_oauthlib import OAuth1
 import json
-#import networkx as nx
-#import sys
+import os
+from textblob import TextBlob
 
 
 credentials = {
@@ -61,9 +62,18 @@ def extractData(line):
             text = line['extended_tweet']['full_text']
         except:
             text = line['text']
+    
+    try:
+        if TextBlob(text).detect_language() != 'en':
+            text = TextBlob(text).translate(to='en')
+            text = str(TextBlob("EN ")+text)
+    except:
+        {}
     returnData.append(text)
     
+    
     return returnData
+
 
 def prepareWorksheet(worksheet):
     worksheet.write(0,0,"User ID")
@@ -78,28 +88,40 @@ def prepareWorksheet(worksheet):
 
 closeProgram = False
 
+
 while not closeProgram:
-    choiceRange = [0,21]
+    choiceRange = [0,2]
     print("1. Save a number of tweets from a local twitter stream")
     print("2. Analyze a saved twitter set")
     print("0. Exit")
     
     choice = -1
     
-    choice = int(input("Please enter an option: "))
-    while choice < choiceRange[0] or choice > choiceRange[1]:
-        choice = int(input("Please enter an option between {} and {}: ".format(choiceRange[0],choiceRange[1])))
+    try:
+        choice = int(input("Please enter an option: "))
+        while choice < choiceRange[0] or choice > choiceRange[1]:
+            choice = int(input("Please enter an option between {} and {}: ".format(choiceRange[0],choiceRange[1])))
+    except:
+        print("Invalid option.")
+        continue
+    
+    
+    
+    
     
     #Capture tweets
     if choice == 1:
         
+        #Input Collection
         tweetSearch = input("Enter the term you want to collect related tweets to: ")
         tweetNum = int(input("Enter the number of tweets to collect: "))
         
+        #Authentication
         url = 'https://stream.twitter.com/1.1/statuses/filter.json'
         client = authenticate(credentials)
         response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': tampa})
         
+        #File name - TODO
         fileName = 'TweetSearch.xlsx'
         
         if response.ok:
@@ -120,25 +142,46 @@ while not closeProgram:
                         print(".", end='', flush=True)
                 for i, status in enumerate(statuses):
                     for j, data in enumerate(status):
-                        worksheet.write(i+2,j,data)
-                        #print("{} {} {} {}".format(status,i,data,j))
+                        worksheet.write(i+1,j,data)
             except KeyboardInterrupt:
                 {}
             finally:
                 print()
                 print('Success! Collected {} tweets.'.format(tweetCounter))
-            workbook.close()
+                workbook.close()
         else:
             print('Connection failed. Error: {}'.format(response.status_code))
             
         
     #Analyze saved tweets 
     if choice == 2:
-        print("TODO")
     
+        #Creating the file directory to load
+        file = input("Enter the file name in the current directory that you want to analyze: ")
+        filePath = os.getcwd()+"/"+file+".xlsx"
+        
+        #Opening the file
+        try:
+            workbook = xlrd.open_workbook(filePath)
+            sheet = workbook.sheet_by_index(0) 
+            number_of_rows = sheet.nrows
+            number_of_columns = sheet.ncols
+            
+            dataCollect = []
+            for x in number_of_rows:
+                val = []
+                for y in number_of_columns:
+                    if x == 0:
+                        continue
+                    val.append(sheet.cell_value(x,y))
+                dataCollect.append(val)
+            print(dataCollect)
+            
+            workbook.close()
+        except:
+            print("Error: File not found.")
+
+
     #Exit
     if choice == 0:
         closeProgram = True
-    
-    
-
