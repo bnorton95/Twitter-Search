@@ -57,11 +57,15 @@ def extractData(line):
         text = line['retweeted_status']['extended_tweet']['full_text']
         returnData.append("Retweet")
     except:
-        returnData.append("Tweet")
         try:
             text = line['extended_tweet']['full_text']
+            returnData.append("Retweet")
         except:
             text = line['text']
+            if (text.split())[0] == "RT":
+                returnData.append("Retweet")
+            else:
+                returnData.append("Tweet")
     
     try:
         if TextBlob(text).detect_language() != 'en':
@@ -132,6 +136,7 @@ while not closeProgram:
             worksheet = workbook.add_worksheet()
             prepareWorksheet(worksheet)
             
+            
             try:
                 for line in response.iter_lines():
                     if tweetCounter == tweetNum:
@@ -158,28 +163,29 @@ while not closeProgram:
     
         #Creating the file directory to load
         file = input("Enter the file name in the current directory that you want to analyze: ")
-        filePath = os.getcwd()+"/"+file+".xlsx"
+        filePath = os.getcwd()+"\\"+file+".xlsx"
+        print(filePath)
         
         #Opening the file
         try:
             workbook = xlrd.open_workbook(filePath)
             sheet = workbook.sheet_by_index(0) 
-            number_of_rows = sheet.nrows
-            number_of_columns = sheet.ncols
+            rows = sheet.nrows
+            columns = sheet.ncols            
             
             dataCollect = []
-            for x in number_of_rows:
+            for x in range(0,rows):
                 val = []
-                for y in number_of_columns:
-                    if x == 0:
-                        continue
+                if x == 0:
+                    continue
+                for y in range(0,columns):
                     val.append(sheet.cell_value(x,y))
                 dataCollect.append(val)
             print(dataCollect)
-            
-            workbook.close()
         except:
             print("Error: File not found.")
+            
+        #Manipulating the data
 
 
     #Exit
