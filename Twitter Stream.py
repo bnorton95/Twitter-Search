@@ -12,6 +12,9 @@ from requests_oauthlib import OAuth1
 import json
 import os
 from textblob import TextBlob
+import matplotlib.pyplot as plt
+from statistics import mean
+
 
 
 credentials = {
@@ -181,12 +184,37 @@ while not closeProgram:
                 for y in range(0,columns):
                     val.append(sheet.cell_value(x,y))
                 dataCollect.append(val)
-            print(dataCollect)
         except:
             print("Error: File not found.")
             
         #Manipulating the data
-
+        polarity = []
+        subjectivity = []
+        for x in range(0,len(dataCollect)):
+            polarity.append(TextBlob(dataCollect[x][6]).sentiment.polarity)
+            subjectivity.append(TextBlob(dataCollect[x][6]).sentiment.subjectivity)
+            
+        #Sentiment analysis graph
+        plt.plot(polarity,subjectivity,'ro')
+        plt.plot(mean(polarity),mean(subjectivity),'ro',color='green')
+        plt.xlabel('Polarity')
+        plt.ylabel('Subjectivity')
+        print("Sentiment analysis for the given set of tweets. Green = averages ")
+        plt.show()
+        
+        #Friends/followers graph
+        plt.clf()
+        plt.xlabel('Friends')
+        plt.ylabel('Followers')
+        for x in range(0,len(dataCollect)):
+            if dataCollect[x][5] == "Retweet":
+                plt.plot(dataCollect[x][3],dataCollect[x][2],'ro',color='red')
+            else:
+                plt.plot(dataCollect[x][3],dataCollect[x][2],'ro',color='blue')
+        print("User friends and followers. Red = Retweet, Blue = Tweet")
+        plt.show()
+        
+        
 
     #Exit
     if choice == 0:
