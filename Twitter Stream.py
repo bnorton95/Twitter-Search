@@ -23,10 +23,13 @@ credentials = {
     'TOKEN_KEY': '1032328784270254080-zPVukJRIWQInVuufzGPwEEXT9nAMwA',
     'TOKEN_SECRET': 'EIlItnR79j1JqGI7eFIPKFIVeF1rJVHD82Ja9VavzLB8S',
 }
-tampa = ('-82.475013,27.827240,-82.391423,28.171345')
+tampa =    ('-82.475013, 27.827240, -82.391423, 28.171345')
+lakeland = ('-81.879508, 28.098964, -81.013072, 29.098964')
+orlando =  ('-81.503789, 28.446720, -81.292904, 28.627188')
 
 #Authentication
 def authenticate(credentials):
+    #Authenticates the Twitter API with the given credentials
     try:
         oauth = OAuth1(client_key=credentials['CONSUMER_KEY'],
                       client_secret=credentials['CONSUMER_SECRET'],
@@ -41,7 +44,7 @@ def authenticate(credentials):
         raise
         
 def extractData(line):
-    """ Returned in the following format:
+    """ Returns the Twitter data in the following format:
     [   User ID,
         Screen Name,
         User Followers,
@@ -83,6 +86,7 @@ def extractData(line):
 
 
 def prepareWorksheet(worksheet):
+    #Used once to add in the tags above the data
     worksheet.write(0,0,"User ID")
     worksheet.write(0,1,"Screen Name")
     worksheet.write(0,2,"User Followers")
@@ -104,14 +108,15 @@ while not closeProgram:
     
     choice = -1
     
-    try:
-        choice = int(input("Please enter an option: "))
-        while choice < choiceRange[0] or choice > choiceRange[1]:
-            choice = int(input("Please enter an option between {} and {}: ".format(choiceRange[0],choiceRange[1])))
-    except:
-        print("Invalid option.")
-        continue
     
+    while 1:
+        try:
+            choice = int(input("Please enter an option: "))
+            if choice < choiceRange[0] or choice > choiceRange[1]:
+                continue
+            break
+        except:
+            continue  
     
     
     
@@ -119,17 +124,51 @@ while not closeProgram:
     #Capture tweets
     if choice == 1:
         
-        #Input Collection
+        #Location of search
+        print("1. Tampa")
+        print("2. Lakeland")
+        print("3. Orlando")
+        while 1:
+            try:
+                tweetLoc = int(input("Enter the location you want to search: "))
+                if tweetLoc == 1:
+                    location = tampa
+                    break
+                elif tweetLoc == 2:
+                    location = lakeland
+                    break
+                elif tweetLoc == 3:
+                    location = orlando
+                    break
+                else:
+                    continue
+                break
+            except:
+                continue
+        
+        #Search term
         tweetSearch = input("Enter the term you want to collect related tweets to: ")
-        tweetNum = int(input("Enter the number of tweets to collect: "))
+        
+        #Number of tweets to search
+        while 1:
+            try:
+                tweetNum = int(input("Enter the number of tweets to collect: "))
+                if tweetNum < 1:
+                    continue
+                break
+            except:
+                continue
         
         #Authentication
         url = 'https://stream.twitter.com/1.1/statuses/filter.json'
         client = authenticate(credentials)
-        response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': tampa})
+        response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': location})
         
-        #File name - TODO
-        fileName = 'TweetSearch.xlsx'
+        #File name
+        fileName = os.getcwd()+'\\Stream_'+tweetSearch+'.xlsx'
+        print("Creating file at: "+fileName)
+        
+        
         
         if response.ok:
             tweetCounter = 0
@@ -154,8 +193,7 @@ while not closeProgram:
             except KeyboardInterrupt:
                 {}
             finally:
-                print()
-                print('Success! Collected {} tweets.'.format(tweetCounter))
+                print('\nSuccess! Collected {} tweets.'.format(tweetCounter))
                 workbook.close()
         else:
             print('Connection failed. Error: {}'.format(response.status_code))
@@ -165,6 +203,7 @@ while not closeProgram:
     if choice == 2:
     
         #Creating the file directory to load
+        #TODO: create list of files that could be opened, open with input of int
         file = input("Enter the file name in the current directory that you want to analyze: ")
         filePath = os.getcwd()+"\\"+file+".xlsx"
         print(filePath)
@@ -206,6 +245,8 @@ while not closeProgram:
         plt.clf()
         plt.xlabel('Friends')
         plt.ylabel('Followers')
+        plt.xscale('log')
+        plt.yscale('log')
         for x in range(0,len(dataCollect)):
             if dataCollect[x][5] == "Retweet":
                 plt.plot(dataCollect[x][3],dataCollect[x][2],'ro',color='red')
