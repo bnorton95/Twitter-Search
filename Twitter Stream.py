@@ -14,6 +14,8 @@ import os
 from textblob import TextBlob
 import matplotlib.pyplot as plt
 from statistics import mean
+import time
+import sys
 
 
 
@@ -161,8 +163,13 @@ while not closeProgram:
         
         #Authentication
         url = 'https://stream.twitter.com/1.1/statuses/filter.json'
+        
         client = authenticate(credentials)
-        response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': location})
+        try:
+            response = client.get(url, stream=True, params={'track': tweetSearch, 'locations': location})
+        except:
+            print("Error: Twitter API connection could not be established. Ending program...")
+            sys.exit()
         
         #File name
         fileName = os.getcwd()+'\\Stream_'+tweetSearch+'.xlsx'
@@ -178,7 +185,7 @@ while not closeProgram:
             worksheet = workbook.add_worksheet()
             prepareWorksheet(worksheet)
             
-            
+            then = time.time()
             try:
                 for line in response.iter_lines():
                     if tweetCounter == tweetNum:
@@ -195,6 +202,8 @@ while not closeProgram:
             finally:
                 print('\nSuccess! Collected {} tweets.'.format(tweetCounter))
                 workbook.close()
+                now = time.time()
+                print('Total search time: '+str(round(now-then,4))+" seconds")
         else:
             print('Connection failed. Error: {}'.format(response.status_code))
             
@@ -203,10 +212,32 @@ while not closeProgram:
     if choice == 2:
     
         #Creating the file directory to load
-        #TODO: create list of files that could be opened, open with input of int
-        file = input("Enter the file name in the current directory that you want to analyze: ")
-        filePath = os.getcwd()+"\\"+file+".xlsx"
-        print(filePath)
+        fileArray = []
+        for file in os.listdir(os.getcwd()):
+            if file.endswith(".xlsx"):
+                #print(os.path.join("/mydir", file))
+                fileArray.append(file)
+        
+        
+        if len(fileArray) == 0:
+            print("No files found.")
+        else:
+            for index, value in enumerate(fileArray):
+                print(str(index+1)+". "+str(value))
+        print("0. Go to main menu")
+        while 1:
+            try:
+                fileInput = int(input("Enter the file name in the current directory that you want to analyze: "))
+                if fileInput <= len(fileArray)+1 and fileInput >= 0:
+                    break;
+            except:
+                continue
+        if fileInput == 0:
+            print("\n\n\n")
+            continue
+        else:
+            filePath = os.getcwd()+"\\"+fileArray[fileInput-1]
+            print(filePath)
         
         #Opening the file
         try:
@@ -234,10 +265,10 @@ while not closeProgram:
             subjectivity.append(TextBlob(dataCollect[x][6]).sentiment.subjectivity)
             
         #Sentiment analysis graph
-        plt.plot(polarity,subjectivity,'ro')
-        plt.plot(mean(polarity),mean(subjectivity),'ro',color='green')
         plt.xlabel('Polarity')
         plt.ylabel('Subjectivity')
+        plt.plot(polarity,subjectivity,'ro')
+        plt.plot(mean(polarity),mean(subjectivity),'ro',color='green')
         print("Sentiment analysis for the given set of tweets. Green = averages ")
         plt.show()
         
