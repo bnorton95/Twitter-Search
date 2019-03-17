@@ -171,8 +171,13 @@ while not closeProgram:
             print("Error: Twitter API connection could not be established. Ending program...")
             sys.exit()
         
-        #File name
-        fileName = os.getcwd()+'\\Stream_'+tweetSearch+'.xlsx'
+        #File name creation
+        j = 1;
+        while True:
+            fileName = os.getcwd()+'\\Stream_'+tweetSearch+'_'+str(j)+'.xlsx'
+            if os.path.isfile(fileName): 
+                break;
+            j += 1
         print("Creating file at: "+fileName)
         
         
