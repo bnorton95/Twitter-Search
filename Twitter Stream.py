@@ -19,11 +19,11 @@ import sys
 
 
 
-credentials = {
-    'CONSUMER_KEY': 'p5oC7sS9IkH3s8LwzJiMqEDPF',
-    'CONSUMER_SECRET': 'zSfzEBN3KRb53RwOJsaXDdDJiIpnxYLHgs1BvRjxfkgwb7CM8J',
-    'TOKEN_KEY': '1032328784270254080-zPVukJRIWQInVuufzGPwEEXT9nAMwA',
-    'TOKEN_SECRET': 'EIlItnR79j1JqGI7eFIPKFIVeF1rJVHD82Ja9VavzLB8S',
+credentials = { # Replace these with credentials
+    'CONSUMER_KEY': 'XXXXXX',
+    'CONSUMER_SECRET': 'XXXXXX',
+    'TOKEN_KEY': 'XXXXXX',
+    'TOKEN_SECRET': 'XXXXXX',
 }
 tampa =    ('-82.475013, 27.827240, -82.391423, 28.171345')
 lakeland = ('-81.879508, 28.098964, -81.013072, 29.098964')
